@@ -76,14 +76,14 @@
         </div>
       </div>
     </div>
-    <p class="muted" style="margin-top:10px">Data loaded from <code>data.json</code>. Update that file to change records. Supports ~5–10k rows comfortably; 500 is trivial.</p>
+    <p class="muted" style="margin-top:10px">Data loaded from <code>paul-stein-content1.csv</code>. Update that file to change records. Supports ~5–10k rows comfortably; 500 is trivial.</p>
   </div>
 
   <!-- Lightweight fuzzy search (Fuse.js) via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
   <script>
   // ===== Configuration =====
-  const DATA_URL = 'data.json'; // same-repo JSON file
+  const DATA_URL = 'paul-stein-content1.csv'; // same-repo CSV file
   const KEYS = ['name','description','group','tags']; // fields to search
   const FACET_FIELD = 'group'; // quick-filter chips
 
@@ -109,9 +109,9 @@
   // ===== Helpers =====
   async function loadData(){
     const res = await fetch(DATA_URL, {cache:'no-store'});
-    if(!res.ok) throw new Error('Failed to load data.json');
-    const json = await res.json();
-    raw = json.records || json; // allow either [{...}] or {records:[...]}
+    if(!res.ok) throw new Error('Failed to load data.csv');
+    const csv = await res.csv();
+    raw = csv.records || csv; // allow either [{...}] or {records:[...]}
     // normalize tags to array
     raw.forEach(r=>{ if(typeof r.tags==='string') r.tags = r.tags.split(',').map(s=>s.trim()).filter(Boolean); r.tags ||= []; });
     fuse = new Fuse(raw, {keys: KEYS, threshold: 0.35, ignoreLocation:true, minMatchCharLength:2});
