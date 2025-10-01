@@ -2,12 +2,12 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Paul Stein Notes </title>
+  <title>Paul Stein Notes</title>
 
-  <!-- PapaParse for CSV loading -->
+  <!-- PapaParse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-  <!-- DataTables CSS + JS -->
+  <!-- DataTables -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -17,38 +17,21 @@
     h1 { margin-bottom: 20px; }
     .filters { margin-bottom: 15px; }
     select { margin-right: 10px; padding: 5px; }
-    table { width: 100%; }
   </style>
 </head>
 <body>
   <h1>Paul Stein Notes</h1>
-
-  <!-- Filter dropdowns -->
-  <div class="filters">
-    <label for="yearFilter">Year: </label>
-    <select id="yearFilter"><option value="">All</option></select>
-
-
-    <label for="seasonFilter">Season: </label>
-    <select id="seasonFilter"><option value="">All</option></select>
-
-    <label for="seasonFilter">Content Type: </label>
-    <select id="seasonFilter"><option value="">All</option></select>
-
-
-  </div>
-
-  <!-- DataTable -->
+  <div class="filters" id="filters"></div>
   <table id="recordsTable" class="display"></table>
 
   <script>
-    Papa.parse("paul-stein-content1.csv", {
+    Papa.parse("paul-stein-notes.csv", {
       download: true,
       header: true,
       complete: function(results) {
         const data = results.data;
 
-        // Define columns
+        // Define columns dynamically
         const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
 
         // Initialize DataTable
@@ -59,32 +42,25 @@
           responsive: true,
         });
 
-        // Helper: populate a dropdown with unique values from a column
-        function populateDropdown(columnName, dropdownId) {
-          const uniqueVals = [...new Set(data.map(row => row[columnName]).filter(v => v))].sort();
-          uniqueVals.forEach(val => {
-            $(dropdownId).append(`<option value="${val}">${val}</option>`);
-          });
-        }
+        // Build dropdown filters for specific columns
+        const filterColumns = ["year", "season"]; // adjust these to match your CSV headers
+        filterColumns.forEach(colName => {
+          const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
 
-        // Populate Year and Season dropdowns
-        populateDropdown("year", "#yearFilter");
-        populateDropdown("season", "#seasonFilter");
+          // Create dropdown
+          const select = $(`<select id="${colName}Filter"><option value="">All ${colName}</option></select>`);
+          uniqueVals.forEach(val => select.append(`<option value="${val}">${val}</option>`));
 
-        // Filtering logic
-        $('#yearFilter, #seasonFilter').on('change', function() {
-          const year = $('#yearFilter').val();
-          const season = $('#seasonFilter').val();
+          // Add to filters div
+          $("#filters").append(select);
 
-          table.rows().every(function() {
-            const row = this.data();
-            const yearMatch = !year || row.year === year;
-            const seasonMatch = !season || row.season === season;
-
-            if (yearMatch && seasonMatch) {
-              $(this.node()).show();
+          // Filter behavior
+          select.on("change", function() {
+            const val = $(this).val();
+            if (val) {
+              table.column(columns.findIndex(c => c.data === colName)).search("^" + val + "$", true, false).draw();
             } else {
-              $(this.node()).hide();
+              table.column(columns.findIndex(c => c.data === colName)).search("").draw();
             }
           });
         });
