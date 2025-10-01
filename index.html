@@ -2,40 +2,43 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Paul Stein Notes Main 7</title>
+  <title>Paul Stein Notes</title>
+
+  <!-- PapaParse for CSV loading -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <!-- DataTables CSS + JS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 6px; }
+    body { font-family: sans-serif; margin: 20px; }
+    h1 { margin-bottom: 20px; }
+    table { width: 100%; }
   </style>
 </head>
 <body>
   <h1>Paul Stein Notes</h1>
-  <div id="table-container">Loading data...</div>
+  <table id="recordsTable" class="display"></table>
 
   <script>
-    // Load CSV from repo (make sure it's in your repo root or /data folder)
-    Papa.parse("paul-stein-content1.csv", {
+    Papa.parse("records.csv", {
       download: true,
       header: true,
       complete: function(results) {
         const data = results.data;
-        let html = "<table><tr>";
-        // Table headers
-        Object.keys(data[0]).forEach(key => {
-          html += "<th>" + key + "</th>";
+
+        // Get column headers
+        const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
+
+        // Initialize DataTable
+        $('#recordsTable').DataTable({
+          data: data,
+          columns: columns,
+          pageLength: 25,   // Show 25 rows per page
+          responsive: true, // Mobile-friendly
         });
-        html += "</tr>";
-        // Table rows
-        data.forEach(row => {
-          html += "<tr>";
-          Object.values(row).forEach(val => {
-            html += "<td>" + val + "</td>";
-          });
-          html += "</tr>";
-        });
-        html += "</table>";
-        document.getElementById("table-container").innerHTML = html;
       }
     });
   </script>
