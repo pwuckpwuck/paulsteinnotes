@@ -43,12 +43,12 @@
         });
 
         // Build dropdown filters for specific columns
-        const filterColumns = ["year", "season"]; // adjust these to match your CSV headers
+        const filterColumns = ["year", "season" "content type"]; // adjust these to match your CSV headers
         filterColumns.forEach(colName => {
           const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
 
           // Create dropdown
-          const select = $(`<select id="${colName}Filter"><option value="">All ${colName}</option></select>`);
+          const select = $(`<select id="${colName}Filter"><option value="">${colName}</option></select>`);
           uniqueVals.forEach(val => select.append(`<option value="${val}">${val}</option>`));
 
           // Add to filters div
