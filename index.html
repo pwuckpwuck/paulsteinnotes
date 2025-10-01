@@ -15,11 +15,24 @@
   <style>
     body { font-family: sans-serif; margin: 20px; }
     h1 { margin-bottom: 20px; }
+    .filters { margin-bottom: 15px; }
+    select { margin-right: 10px; padding: 5px; }
     table { width: 100%; }
   </style>
 </head>
 <body>
   <h1>Paul Stein Notes</h1>
+
+  <!-- Filter dropdowns -->
+  <div class="filters">
+    <label for="yearFilter">Year: </label>
+    <select id="yearFilter"><option value="">All</option></select>
+
+    <label for="seasonFilter">Season: </label>
+    <select id="seasonFilter"><option value="">All</option></select>
+  </div>
+
+  <!-- DataTable -->
   <table id="recordsTable" class="display"></table>
 
   <script>
@@ -29,15 +42,45 @@
       complete: function(results) {
         const data = results.data;
 
-        // Get column headers
+        // Define columns
         const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
 
         // Initialize DataTable
-        $('#recordsTable').DataTable({
+        const table = $('#recordsTable').DataTable({
           data: data,
           columns: columns,
-          pageLength: 25,   // Show 25 rows per page
-          responsive: true, // Mobile-friendly
+          pageLength: 25,
+          responsive: true,
+        });
+
+        // Helper: populate a dropdown with unique values from a column
+        function populateDropdown(columnName, dropdownId) {
+          const uniqueVals = [...new Set(data.map(row => row[columnName]).filter(v => v))].sort();
+          uniqueVals.forEach(val => {
+            $(dropdownId).append(`<option value="${val}">${val}</option>`);
+          });
+        }
+
+        // Populate Year and Season dropdowns
+        populateDropdown("year", "#yearFilter");
+        populateDropdown("season", "#seasonFilter");
+
+        // Filtering logic
+        $('#yearFilter, #seasonFilter').on('change', function() {
+          const year = $('#yearFilter').val();
+          const season = $('#seasonFilter').val();
+
+          table.rows().every(function() {
+            const row = this.data();
+            const yearMatch = !year || row.year === year;
+            const seasonMatch = !season || row.season === season;
+
+            if (yearMatch && seasonMatch) {
+              $(this.node()).show();
+            } else {
+              $(this.node()).hide();
+            }
+          });
         });
       }
     });
