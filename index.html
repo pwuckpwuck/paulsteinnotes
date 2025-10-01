@@ -3,9 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <title>Paul Stein Notes</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px; }
+  </style>
 </head>
 <body>
   <h1>Paul Stein Notes</h1>
-  <p>If you see this, GitHub Pages is reading index.html instead of README.md!</p>
+  <div id="table-container">Loading data...</div>
+
+  <script>
+    // Load CSV from repo (make sure it's in your repo root or /data folder)
+    Papa.parse("paulsteinnotes.csv", {
+      download: true,
+      header: true,
+      complete: function(results) {
+        const data = results.data;
+        let html = "<table><tr>";
+        // Table headers
+        Object.keys(data[0]).forEach(key => {
+          html += "<th>" + key + "</th>";
+        });
+        html += "</tr>";
+        // Table rows
+        data.forEach(row => {
+          html += "<tr>";
+          Object.values(row).forEach(val => {
+            html += "<td>" + val + "</td>";
+          });
+          html += "</tr>";
+        });
+        html += "</table>";
+        document.getElementById("table-container").innerHTML = html;
+      }
+    });
+  </script>
 </body>
 </html>
