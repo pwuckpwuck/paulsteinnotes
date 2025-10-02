@@ -48,7 +48,7 @@
           const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
 
           // Create dropdown  // I removed "all" from the <option value="all" then replaced it with "$"
-          const select = $(`<select id="${colName}Filter"><option value="$">${colName}</option></select>`);
+          const select = $(`<select id="${colName}Filter"><option value="All">${colName}</option></select>`);
           uniqueVals.forEach(val => select.append(`<option value="${val}">${val}</option>`));
 
           // Add to filters div
