@@ -43,7 +43,7 @@
         });
 
         // Build dropdown filters for specific columns
-        const filterColumns = ["year", "season"]; // adjust these to match your CSV headers
+        const filterColumns = ["year", "season", "content type", "author"]; // adjust these to match your CSV headers
         filterColumns.forEach(colName => {
           const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
 
