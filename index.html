@@ -72,7 +72,7 @@
   <script>
     Papa.parse("paul-stein-content1.csv", {
       download: true,
-      header: true,
+      header: false,
       complete: function(results) {
         const data = results.data;
         const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
