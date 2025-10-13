@@ -107,21 +107,6 @@
     <div id="filterContainer"></div>
   </aside>
 
-  <button id="openViewer">What Year/Season/Week?</button>
-
-<div id="viewerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);">
-  <iframe src="https://www.episcopalchurch.org/lectionary/" style="width:90%;height:90%;margin:5% auto;display:block;border:0;"></iframe>
-  <button onclick="document.getElementById('viewerModal').style.display='none'" 
-          style="position:absolute;top:10px;right:10px;">Close</button>
-</div>
-
-<script>
-document.getElementById('openViewer').addEventListener('click', function(){
-  document.getElementById('viewerModal').style.display = 'block';
-});
-</script>
-
-
   <main>
     <h1>Paul Stein Notes</h1>
     <div id="breadcrumbs">Home</div>
