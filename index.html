@@ -13,16 +13,61 @@
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    h1 { margin-bottom: 20px; }
-    .filters { margin-bottom: 15px; }
-    select { margin-right: 10px; padding: 5px; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      height: 100vh;
+    }
+
+    aside {
+      background: #f7f7f7;
+      padding: 20px;
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+    }
+
+    main {
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    h1 { margin-top: 0; }
+
+    .filter-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; }
+    select { width: 100%; padding: 5px; margin-bottom: 10px; }
+
+    #breadcrumbs {
+      font-size: 0.9em;
+      margin-bottom: 15px;
+      color: #555;
+    }
+
+    #breadcrumbs span {
+      cursor: pointer;
+      color: #0066cc;
+    }
+
+    #breadcrumbs span:hover {
+      text-decoration: underline;
+    }
+
+    table { width: 100%; }
   </style>
 </head>
 <body>
-  <h1>Paul Stein Notes</h1>
-  <div class="filters" id="filters"></div>
-  <table id="recordsTable" class="display"></table>
+  <aside>
+    <h2>Filter</h2>
+    <div id="filterContainer"></div>
+  </aside>
+
+  <main>
+    <h1>Paul Stein Notes</h1>
+    <div id="breadcrumbs">Home</div>
+    <table id="recordsTable" class="display"></table>
+  </main>
 
   <script>
     Papa.parse("paul-stein-content1.csv", {
@@ -30,11 +75,8 @@
       header: true,
       complete: function(results) {
         const data = results.data;
-
-        // Define columns dynamically
         const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
 
-        // Initialize DataTable
         const table = $('#recordsTable').DataTable({
           data: data,
           columns: columns,
@@ -42,28 +84,65 @@
           responsive: true,
         });
 
-        // Build dropdown filters for specific columns
-        const filterColumns = ["year", "season", "content type"]; // adjust these to match your CSV headers
+        const filterColumns = ["year", "season", "week", "content type", "author"]; // change for your dataset
+        const filters = {};
+
+        // Build sidebar filters
         filterColumns.forEach(colName => {
           const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
-
-          // Create dropdown
-          const select = $(`<select id="${colName}Filter"><option value="">All ${colName}</option></select>`);
+          const group = $('<div class="filter-group"></div>');
+          const label = $(`<label for="${colName}Filter">${colName.charAt(0).toUpperCase() + colName.slice(1)}</label>`);
+          const select = $(`<select id="${colName}Filter"><option value="">All</option></select>`);
           uniqueVals.forEach(val => select.append(`<option value="${val}">${val}</option>`));
+          group.append(label).append(select);
+          $("#filterContainer").append(group);
+          filters[colName] = select;
+        });
 
-          // Add to filters div
-          $("#filters").append(select);
+        // Build breadcrumbs dynamically
+        function updateBreadcrumbs() {
+          const crumbs = [];
+          crumbs.push(`<span data-type="home">Home</span>`);
+          filterColumns.forEach(col => {
+            const val = filters[col].val();
+            if (val) crumbs.push(`<span data-type="filter" data-col="${col}">${col}: ${val}</span>`);
+          });
+          $("#breadcrumbs").html(crumbs.join(" › "));
+        }
 
-          // Filter behavior
-          select.on("change", function() {
-            const val = $(this).val();
+        // Apply filters to DataTable
+        function applyFilters() {
+          filterColumns.forEach(colName => {
+            const val = filters[colName].val();
+            const columnIndex = columns.findIndex(c => c.data === colName);
             if (val) {
-              table.column(columns.findIndex(c => c.data === colName)).search("^" + val + "$", true, false).draw();
+              table.column(columnIndex).search("^" + val + "$", true, false);
             } else {
-              table.column(columns.findIndex(c => c.data === colName)).search("").draw();
+              table.column(columnIndex).search("");
             }
           });
+          table.draw();
+          updateBreadcrumbs();
+        }
+
+        // Listen for dropdown changes
+        Object.values(filters).forEach(select => select.on("change", applyFilters));
+
+        // Listen for breadcrumb clicks
+        $("#breadcrumbs").on("click", "span", function() {
+          const type = $(this).data("type");
+          if (type === "home") {
+            // clear all filters
+            Object.values(filters).forEach(s => s.val(""));
+          } else if (type === "filter") {
+            const col = $(this).data("col");
+            filters[col].val("");
+          }
+          applyFilters();
         });
+
+        // Initialize breadcrumbs
+        updateBreadcrumbs();
       }
     });
   </script>
