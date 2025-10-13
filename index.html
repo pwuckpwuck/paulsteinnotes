@@ -72,16 +72,16 @@
   <script>
     Papa.parse("paul-stein-content1.csv", {
       download: true,
-      header: false,
-      complete: function(results) {
-        const data = results.data;
-        const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
+    //  header: false,
+      //complete: function(results) {
+      //  const data = results.data;
+     //   const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
 
-        const table = $('#recordsTable').DataTable({
-          data: data,
-          columns: columns,
-          pageLength: 25,
-          responsive: true,
+     //   const table = $('#recordsTable').DataTable({
+    //      data: data,
+      //    columns: columns,
+      //    pageLength: 25,
+      //    responsive: true,
         });
 
         const filterColumns = ["year", "season", "week", "content type", "author"]; // change for your dataset
