@@ -7,11 +7,6 @@
   <!-- PapaParse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-  <!-- DataTables -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -54,7 +49,28 @@
       text-decoration: underline;
     }
 
-    table { width: 100%; }
+    .record {
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+    }
+
+    .record-title {
+      font-weight: 700;
+      font-size: 1.1em;
+      margin-bottom: 5px;
+      color: #222;
+    }
+
+    .record-content {
+      font-size: 0.95em;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    .record:last-child {
+      border-bottom: none;
+    }
   </style>
 </head>
 <body>
@@ -66,82 +82,114 @@
   <main>
     <h1>Paul Stein Notes</h1>
     <div id="breadcrumbs">Home</div>
-    <table id="recordsTable" class="display"></table>
+    <div id="recordsContainer"></div>
   </main>
 
   <script>
-    Papa.parse("paul-stein-content1.csv", {
+    Papa.parse("paul-stein-conten1.csv", {
       download: true,
-    //  header: false,
-      //complete: function(results) {
-      //  const data = results.data;
-     //   const columns = Object.keys(data[0]).map(key => ({ title: key, data: key }));
-
-     //   const table = $('#recordsTable').DataTable({
-    //      data: data,
-      //    columns: columns,
-      //    pageLength: 25,
-      //    responsive: true,
-        });
-
-        const filterColumns = ["year", "season", "week", "content type", "author"]; // change for your dataset
+      header: true,
+      complete: function(results) {
+        const data = results.data.filter(row => row.Title && row.Content);
+        const filterColumns = ["year", "season", "week", "content type", "author"]; // adjust to match your CSV headers
         const filters = {};
 
         // Build sidebar filters
         filterColumns.forEach(colName => {
           const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
-          const group = $('<div class="filter-group"></div>');
-          const label = $(`<label for="${colName}Filter">${colName.charAt(0).toUpperCase() + colName.slice(1)}</label>`);
-          const select = $(`<select id="${colName}Filter"><option value="">All</option></select>`);
-          uniqueVals.forEach(val => select.append(`<option value="${val}">${val}</option>`));
-          group.append(label).append(select);
-          $("#filterContainer").append(group);
+          const group = document.createElement("div");
+          group.classList.add("filter-group");
+
+          const label = document.createElement("label");
+          label.textContent = colName.charAt(0).toUpperCase() + colName.slice(1);
+
+          const select = document.createElement("select");
+          select.id = colName + "Filter";
+
+          const allOption = document.createElement("option");
+          allOption.value = "";
+          allOption.textContent = "All";
+          select.appendChild(allOption);
+
+          uniqueVals.forEach(val => {
+            const opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = val;
+            select.appendChild(opt);
+          });
+
+          group.appendChild(label);
+          group.appendChild(select);
+          document.getElementById("filterContainer").appendChild(group);
+
           filters[colName] = select;
         });
 
-        // Build breadcrumbs dynamically
+        const recordsContainer = document.getElementById("recordsContainer");
+
+        // Display records as stacked cards
+        function renderRecords(filteredData) {
+          recordsContainer.innerHTML = "";
+          if (!filteredData.length) {
+            recordsContainer.innerHTML = "<p>No results found.</p>";
+            return;
+          }
+          filteredData.forEach(row => {
+            const record = document.createElement("div");
+            record.classList.add("record");
+
+            const title = document.createElement("div");
+            title.classList.add("record-title");
+            title.textContent = row.Title;
+
+            const content = document.createElement("div");
+            content.classList.add("record-content");
+            content.textContent = row.Content;
+
+            record.appendChild(title);
+            record.appendChild(content);
+            recordsContainer.appendChild(record);
+          });
+        }
+
+        // Breadcrumb logic
         function updateBreadcrumbs() {
           const crumbs = [];
           crumbs.push(`<span data-type="home">Home</span>`);
           filterColumns.forEach(col => {
-            const val = filters[col].val();
+            const val = filters[col].value;
             if (val) crumbs.push(`<span data-type="filter" data-col="${col}">${col}: ${val}</span>`);
           });
-          $("#breadcrumbs").html(crumbs.join(" › "));
+          document.getElementById("breadcrumbs").innerHTML = crumbs.join(" › ");
         }
 
-        // Apply filters to DataTable
         function applyFilters() {
-          filterColumns.forEach(colName => {
-            const val = filters[colName].val();
-            const columnIndex = columns.findIndex(c => c.data === colName);
-            if (val) {
-              table.column(columnIndex).search("^" + val + "$", true, false);
-            } else {
-              table.column(columnIndex).search("");
-            }
+          let filtered = [...data];
+          filterColumns.forEach(col => {
+            const val = filters[col].value;
+            if (val) filtered = filtered.filter(r => r[col] === val);
           });
-          table.draw();
+          renderRecords(filtered);
           updateBreadcrumbs();
         }
 
-        // Listen for dropdown changes
-        Object.values(filters).forEach(select => select.on("change", applyFilters));
+        // Add listeners
+        Object.values(filters).forEach(select => select.addEventListener("change", applyFilters));
 
-        // Listen for breadcrumb clicks
-        $("#breadcrumbs").on("click", "span", function() {
-          const type = $(this).data("type");
+        // Breadcrumb clicks
+        document.getElementById("breadcrumbs").addEventListener("click", e => {
+          const type = e.target.dataset.type;
           if (type === "home") {
-            // clear all filters
-            Object.values(filters).forEach(s => s.val(""));
+            Object.values(filters).forEach(s => (s.value = ""));
           } else if (type === "filter") {
-            const col = $(this).data("col");
-            filters[col].val("");
+            const col = e.target.dataset.col;
+            filters[col].value = "";
           }
           applyFilters();
         });
 
-        // Initialize breadcrumbs
+        // Initialize
+        renderRecords(data);
         updateBreadcrumbs();
       }
     });
