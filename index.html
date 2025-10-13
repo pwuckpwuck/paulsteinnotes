@@ -91,7 +91,7 @@
       header: true,
       complete: function(results) {
         const data = results.data.filter(row => row.Title && row.Content);
-        const filterColumns = ["year", "season", "week", "content type", "author"]; // adjust to match your CSV headers
+        const filterColumns = ["Year", "Season", "Week", "Author", "Title", "Content Type", "Content"]; // adjust to match your CSV headers
         const filters = {};
 
         // Build sidebar filters
