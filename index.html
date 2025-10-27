@@ -138,15 +138,24 @@
   <script>
     let records = [];
 
-    // Load CSV file (ensure it exists at data/paul-stein-content1.csv)
+    // Load CSV file from root folder
     Papa.parse("paul-stein-content1.csv", {
       download: true,
       header: true,
-      complete: function (results) {
-        records = results.data.filter(r => r.year); // ensure valid rows
+      complete: function(results) {
+        if (!results.data || results.data.length === 0) {
+          console.error("CSV loaded but no data found:", results);
+          document.querySelector("#main-content").innerHTML = "<p style='color:red;'>Error: CSV loaded but no data found.</p>";
+          return;
+        }
+        records = results.data.filter(r => r.year); // filter out invalid rows
         populateFilters(records);
         showFirstRecord();
       },
+      error: function(err, file, inputElem, reason) {
+        console.error("PapaParse error:", err, reason);
+        document.querySelector("#main-content").innerHTML = "<p style='color:red;'>Error loading CSV: see console for details.</p>";
+      }
     });
 
     function populateFilters(data) {
@@ -162,12 +171,10 @@
 
     function fillSelect(selector, values) {
       const select = document.querySelector(selector);
-      select.innerHTML =
-        '<option value="">All</option>' +
-        values.map(v => `<option value="${v}">${v}</option>`).join("");
+      select.innerHTML = '<option value="">All</option>' + values.map(v => `<option value="${v}">${v}</option>`).join("");
     }
 
-    // ---------- FILTER EVENT LISTENERS ----------
+    // Filter listeners
     ["#yearFilter", "#seasonFilter", "#weekFilter"].forEach(sel => {
       document.querySelector(sel).addEventListener("change", function() {
         const year = document.querySelector("#yearFilter").value;
@@ -178,12 +185,10 @@
       });
     });
 
-    // ---------- INITIAL DISPLAY ----------
     function showFirstRecord() {
       if (records.length > 0) renderRecord(records[0]);
     }
 
-    // ---------- RENDER CONTENT ----------
     function renderRecord(item) {
       const main = document.querySelector("#main-content");
       main.innerHTML = `
@@ -214,7 +219,6 @@
       updateBreadcrumbs(item);
     }
 
-    // ---------- BREADCRUMBS ----------
     function updateBreadcrumbs(record) {
       const breadcrumb = document.querySelector("#breadcrumbs");
       breadcrumb.innerHTML = `
