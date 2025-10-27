@@ -104,16 +104,19 @@ ar      text-decoration: underline;
     <label for="dateFilter">Select Date</label>
     <input type="date" id="dateFilter" />
 
-    <label for="yearFilter">year</label>
+    <label for="yearFilter">Lectionary Year</label>
     <select id="yearFilter"></select>
 
-    <label for="seasonFilter">season</label>
+    <label for="seasonFilter">Lectionary Season</label>
     <select id="seasonFilter"></select>
 
-    <label for="weekFilter">week</label>
+    <label for="weekFilter">Lectionary Week</label>
     <select id="weekFilter"></select>
 
-    <label for="weekFilter">Sunday</label>
+    <label for="weekFilter">Sunday Date</label>
+    <select id="weekFilter"></select>
+
+    <label for="weekFilter">Lectionary Sunday</label>
     <select id="weekFilter"></select>
 
     <label for="weekFilter">Content Type</label>
@@ -139,7 +142,7 @@ ar      text-decoration: underline;
     let records = [];
     let currentFilters = { year: null, season: null, week: null, date: null };
 
-    Papa.parse("data/paul-stein-conten1.csv", {
+    Papa.parse("data/paul-stein-content1.csv", {
       download: true,
       header: true,
       complete: function (results) {
