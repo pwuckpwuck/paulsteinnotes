@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Paul Stein Notes</title>
 
-  <!-- PapaParse for reading CSV -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -16,8 +13,6 @@
       height: 100vh;
       overflow: hidden;
     }
-
-    /* Sidebar */
     #sidebar {
       background: #f5f5f5;
       padding: 1rem;
@@ -25,108 +20,35 @@
       overflow-y: auto;
       border-right: 1px solid #ddd;
     }
-
-    #sidebar h2 {
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-    }
-
-    #sidebar label {
-      display: block;
-      margin-top: 1rem;
-      font-weight: bold;
-    }
-
-    #sidebar select {
-      width: 100%;
-      padding: 0.4rem;
-      margin-top: 0.3rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    /* Main content */
-    #main {
-      flex: 1;
-      padding: 1.5rem;
-      overflow-y: auto;
-    }
-
-    #breadcrumbs {
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-      color: #666;
-    }
-
-    #breadcrumbs a {
-      color: #0077cc;
-      text-decoration: none;
-    }
-
-    #breadcrumbs a:hover {
-      text-decoration: underline;
-    }
-
-    h2 {
-      margin-top: 0;
-      font-size: 1.5rem;
-    }
-
-    .author {
-      color: #666;
-      font-style: italic;
-    }
-
-    section {
-      margin-bottom: 1.5rem;
-    }
-
-    /* Mobile layout */
+    #sidebar h2 { font-size: 1.2rem; margin-bottom: 1rem; }
+    #sidebar label { display: block; margin-top: 1rem; font-weight: bold; }
+    #sidebar select { width: 100%; padding: 0.4rem; margin-top: 0.3rem; border: 1px solid #ccc; border-radius: 4px; }
+    #main { flex: 1; padding: 1.5rem; overflow-y: auto; }
+    #breadcrumbs { font-size: 0.9rem; margin-bottom: 1rem; color: #666; }
+    #breadcrumbs a { color: #0077cc; text-decoration: none; }
+    #breadcrumbs a:hover { text-decoration: underline; }
+    h2 { margin-top: 0; font-size: 1.5rem; }
+    .author { color: #666; font-style: italic; }
+    section { margin-bottom: 1.5rem; }
     @media (max-width: 768px) {
-      body {
-        flex-direction: column;
-      }
-
-      #sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #ddd;
-      }
+      body { flex-direction: column; }
+      #sidebar { width: 100%; border-right: none; border-bottom: 1px solid #ddd; }
     }
   </style>
 </head>
-
 <body>
-  <!-- Sidebar Filters -->
   <div id="sidebar">
     <h2>Filter Readings</h2>
-
-    <label for="yearFilter">Lectionary Year</label>
-    <select id="yearFilter"></select>
-
-    <label for="seasonFilter">Lectionary Season</label>
-    <select id="seasonFilter"></select>
-
-    <label for="weekFilter">Lectionary Week</label>
-    <select id="weekFilter"></select>
-
-    <label for="sundayDateFilter">Sunday Date</label>
-    <select id="sundayDateFilter"></select>
-
-    <label for="lectionarySundayFilter">Lectionary Sunday</label>
-    <select id="lectionarySundayFilter"></select>
-
-    <label for="contentTypeFilter">Content Type</label>
-    <select id="contentTypeFilter"></select>
-
-    <label for="authorFilter">Author</label>
-    <select id="authorFilter"></select>
-
-    <label for="contentFilter">Content</label>
-    <select id="contentFilter"></select>
+    <label for="yearFilter">Lectionary Year</label><select id="yearFilter"></select>
+    <label for="seasonFilter">Lectionary Season</label><select id="seasonFilter"></select>
+    <label for="weekFilter">Lectionary Week</label><select id="weekFilter"></select>
+    <label for="sundayDateFilter">Sunday Date</label><select id="sundayDateFilter"></select>
+    <label for="lectionarySundayFilter">Lectionary Sunday</label><select id="lectionarySundayFilter"></select>
+    <label for="contentTypeFilter">Content Type</label><select id="contentTypeFilter"></select>
+    <label for="authorFilter">Author</label><select id="authorFilter"></select>
+    <label for="contentFilter">Content</label><select id="contentFilter"></select>
   </div>
 
-  <!-- Main Content -->
   <div id="main">
     <nav id="breadcrumbs"></nav>
     <div id="main-content">
@@ -134,87 +56,37 @@
     </div>
   </div>
 
-  <!-- JavaScript -->
   <script>
     let records = [];
 
-    // Load CSV file from root folder
-    Papa.parse("https://pwuckpwuck.github.io/paulsteinnotes/paul-stein-content1.csv", {
-      download: true,
-      header: true,
-      complete: function(results) {
-        if (!results.data || results.data.length === 0) {
-          console.error("CSV loaded but no data found:", results);
-          document.querySelector("#main-content").innerHTML = "<p style='color:red;'>Error: CSV loaded but no data found.</p>";
-          return;
-        }
-        records = results.data.filter(r => r.year); // filter out invalid rows
-        populateFilters(records);
-        showFirstRecord();
-      },
-      error: function(err, file, inputElem, reason) {
-        console.error("PapaParse error:", err, reason);
-        document.querySelector("#main-content").innerHTML = "<p style='color:red;'>Error loading CSV: see console for details.</p>";
-      }
-    });
-
-    function populateFilters(data) {
-      fillSelect("#yearFilter", [...new Set(data.map(d => d.year))]);
-      fillSelect("#seasonFilter", [...new Set(data.map(d => d.season))]);
-      fillSelect("#weekFilter", [...new Set(data.map(d => d.week))]);
-      fillSelect("#sundayDateFilter", [...new Set(data.map(d => d.sunday_date))]);
-      fillSelect("#lectionarySundayFilter", [...new Set(data.map(d => d.lectionary_sunday))]);
-      fillSelect("#contentTypeFilter", [...new Set(data.map(d => d.content_type))]);
-      fillSelect("#authorFilter", [...new Set(data.map(d => d.author))]);
-      fillSelect("#contentFilter", [...new Set(data.map(d => d.content))]);
+    // Simple CSV parser (assumes no commas inside quotes)
+    function parseCSV(csvText) {
+      const lines = csvText.trim().split("\n");
+      const headers = lines.shift().split(",");
+      return lines.map(line => {
+        const values = line.split(",");
+        const obj = {};
+        headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim() || "");
+        return obj;
+      });
     }
 
+    // Populate a select with unique values
     function fillSelect(selector, values) {
       const select = document.querySelector(selector);
-      select.innerHTML = '<option value="">All</option>' + values.map(v => `<option value="${v}">${v}</option>`).join("");
+      select.innerHTML = '<option value="">All</option>' + [...new Set(values)].map(v => `<option value="${v}">${v}</option>`).join("");
     }
 
-    // Filter listeners
-    ["#yearFilter", "#seasonFilter", "#weekFilter"].forEach(sel => {
-      document.querySelector(sel).addEventListener("change", function() {
-        const year = document.querySelector("#yearFilter").value;
-        const season = document.querySelector("#seasonFilter").value;
-        const week = document.querySelector("#weekFilter").value;
-        const matched = records.find(r => r.year === year && r.season === season && r.week === week);
-        if (matched) renderRecord(matched);
-      });
-    });
-
-    function showFirstRecord() {
-      if (records.length > 0) renderRecord(records[0]);
-    }
-
+    // Render a record
     function renderRecord(item) {
       const main = document.querySelector("#main-content");
       main.innerHTML = `
         <h2>${item.gospel_title || ""}</h2>
         <p><em>${item.date} • ${item.season} Week ${item.week}, Year ${item.year}</em></p>
 
-        ${item.gospel_content ? `
-          <section class="gospel">
-            <h3>${item.gospel_title}</h3>
-            <p class="author">by ${item.gospel_author}</p>
-            <p>${item.gospel_content}</p>
-          </section>` : ""}
-
-        ${item.commentary_content ? `
-          <section class="commentary">
-            <h3>${item.commentary_title}</h3>
-            <p class="author">by ${item.commentary_author}</p>
-            <p>${item.commentary_content}</p>
-          </section>` : ""}
-
-        ${item.reflection_content ? `
-          <section class="reflection">
-            <h3>${item.reflection_title}</h3>
-            <p class="author">by ${item.reflection_author}</p>
-            <p>${item.reflection_content}</p>
-          </section>` : ""}
+        ${item.gospel_content ? `<section class="gospel"><h3>${item.gospel_title}</h3><p class="author">by ${item.gospel_author}</p><p>${item.gospel_content}</p></section>` : ""}
+        ${item.commentary_content ? `<section class="commentary"><h3>${item.commentary_title}</h3><p class="author">by ${item.commentary_author}</p><p>${item.commentary_content}</p></section>` : ""}
+        ${item.reflection_content ? `<section class="reflection"><h3>${item.reflection_title}</h3><p class="author">by ${item.reflection_author}</p><p>${item.reflection_content}</p></section>` : ""}
       `;
       updateBreadcrumbs(item);
     }
@@ -232,6 +104,48 @@
       const matched = records.find(r => r[field] === value);
       if (matched) renderRecord(matched);
     }
+
+    function populateFilters(data) {
+      fillSelect("#yearFilter", data.map(d => d.year));
+      fillSelect("#seasonFilter", data.map(d => d.season));
+      fillSelect("#weekFilter", data.map(d => d.week));
+      fillSelect("#sundayDateFilter", data.map(d => d.sunday_date));
+      fillSelect("#lectionarySundayFilter", data.map(d => d.lectionary_sunday));
+      fillSelect("#contentTypeFilter", data.map(d => d.content_type));
+      fillSelect("#authorFilter", data.map(d => d.author));
+      fillSelect("#contentFilter", data.map(d => d.content));
+    }
+
+    // Filter event listeners
+    ["#yearFilter", "#seasonFilter", "#weekFilter"].forEach(sel => {
+      document.querySelector(sel).addEventListener("change", function() {
+        const year = document.querySelector("#yearFilter").value;
+        const season = document.querySelector("#seasonFilter").value;
+        const week = document.querySelector("#weekFilter").value;
+        const matched = records.find(r => r.year === year && r.season === season && r.week === week);
+        if (matched) renderRecord(matched);
+      });
+    });
+
+    function showFirstRecord() {
+      if (records.length > 0) renderRecord(records[0]);
+    }
+
+    // Fetch CSV and parse
+    fetch("https://pwuckpwuck.github.io/paulsteinnotes/paul-stein-content1.csv")
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.text();
+      })
+      .then(text => {
+        records = parseCSV(text).filter(r => r.year);
+        populateFilters(records);
+        showFirstRecord();
+      })
+      .catch(err => {
+        console.error("CSV fetch/parse error:", err);
+        document.querySelector("#main-content").innerHTML = "<p style='color:red;'>Error loading CSV. See console.</p>";
+      });
   </script>
 </body>
 </html>
