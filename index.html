@@ -142,7 +142,7 @@ ar      text-decoration: underline;
     let records = [];
     let currentFilters = { year: null, season: null, week: null, date: null };
 
-    Papa.parse("data/paul-stein-content1.csv", {
+    Papa.parse("paul-stein-content1.csv", {
       download: true,
       header: true,
       complete: function (results) {
