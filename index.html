@@ -114,137 +114,125 @@
     <div id="recordsContainer"></div>
   </main>
 
-  <script>
-    const toggleBtn = document.getElementById("toggleSidebar");
-    const sidebar = document.querySelector("aside");
-    toggleBtn.addEventListener("click", () => sidebar.classList.toggle("collapsed"));
+let records = [];
+let currentFilters = { year: null, season: null, week: null, date: null };
 
-    Papa.parse("paul-stein-content1.csv", {
-      download: true,
-      header: true,
-      complete: function(results) {
-        const data = results.data.filter(row => row.Title && row.Content);
-        const filterColumns = ["year", "season", "week", "date", "Author", "Content Type"]; // use your actual CSV headers
-        const filters = {};
+// Load CSV
+Papa.parse('data/lectionary.csv', {
+  download: true,
+  header: true,
+  complete: function(results) {
+    records = results.data;
+    populateFilters(records);
+    showDefaultWeek();
+  }
+});
 
-        // Build sidebar filters
-        filterColumns.forEach(colName => {
-          const uniqueVals = [...new Set(data.map(row => row[colName]).filter(v => v))].sort();
-          const group = document.createElement("div");
-          group.classList.add("filter-group");
+function populateFilters(data) {
+  const years = [...new Set(data.map(d => d.year))];
+  const seasons = [...new Set(data.map(d => d.season))];
+  const weeks = [...new Set(data.map(d => d.week))];
 
-          const label = document.createElement("label");
-          label.textContent = colName;
+  fillSelect('#yearFilter', years);
+  fillSelect('#seasonFilter', seasons);
+  fillSelect('#weekFilter', weeks);
+}
 
-          const select = document.createElement("select");
-          select.id = colName + "Filter";
+function fillSelect(selector, values) {
+  const select = document.querySelector(selector);
+  select.innerHTML = '<option value="">All</option>' + 
+    values.map(v => `<option value="${v}">${v}</option>`).join('');
+}
 
-          const allOption = document.createElement("option");
-          allOption.value = "";
-          allOption.textContent = "All";
-          select.appendChild(allOption);
+// ----------  DATE SELECTION  ----------
+document.querySelector('#dateFilter').addEventListener('change', function() {
+  const selectedDate = this.value;
+  const matched = records.find(r => r.date === selectedDate);
+  if (matched) updateFiltersFromRecord(matched);
+});
 
-          uniqueVals.forEach(val => {
-            const opt = document.createElement("option");
-            opt.value = val;
-            opt.textContent = val;
-            select.appendChild(opt);
-          });
+function updateFiltersFromRecord(record) {
+  currentFilters = {
+    year: record.year,
+    season: record.season,
+    week: record.week,
+    date: record.date
+  };
+  document.querySelector('#yearFilter').value = record.year;
+  document.querySelector('#seasonFilter').value = record.season;
+  document.querySelector('#weekFilter').value = record.week;
+  document.querySelector('#dateFilter').value = record.date;
+  renderContent(record);
+  updateBreadcrumbs(record);
+}
 
-          group.appendChild(label);
-          group.appendChild(select);
-          document.getElementById("filterContainer").appendChild(group);
+// ----------  OTHER FILTERS  ----------
+['#yearFilter','#seasonFilter','#weekFilter'].forEach(sel => {
+  document.querySelector(sel).addEventListener('change', function() {
+    const year = document.querySelector('#yearFilter').value;
+    const season = document.querySelector('#seasonFilter').value;
+    const week = document.querySelector('#weekFilter').value;
+    const matched = records.find(r =>
+      r.year === year && r.season === season && r.week === week
+    );
+    if (matched) updateFiltersFromRecord(matched);
+  });
+});
 
-          filters[colName] = select;
-        });
+// ----------  DEFAULT WEEK ON PAGE LOAD ----------
+function showDefaultWeek() {
+  const today = new Date().toISOString().split('T')[0];
+  const record = records.find(r => r.date <= today) || records[0];
+  updateFiltersFromRecord(record);
+}
 
-        const recordsContainer = document.getElementById("recordsContainer");
-        const keywordInput = document.getElementById("keywordSearch");
+// ----------  RENDER CONTENT ----------
+function renderContent(item) {
+  const main = document.querySelector('#main-content');
+  main.innerHTML = `
+    <h2>${item.gospel_title || ''}</h2>
+    <p><em>${item.date} • ${item.season} Week ${item.week}, Year ${item.year}</em></p>
 
-        function renderRecords(filteredData) {
-          recordsContainer.innerHTML = "";
-          if (!filteredData.length) {
-            recordsContainer.innerHTML = "<p>No results found.</p>";
-            return;
-          }
-          filteredData.forEach(row => {
-            const record = document.createElement("div");
-            record.classList.add("record");
+    ${item.gospel_content ? `
+      <section class="gospel">
+        <h3>${item.gospel_title}</h3>
+        <p class="author">by ${item.gospel_author}</p>
+        <p>${item.gospel_content}</p>
+      </section>
+    ` : ''}
 
-            const title = document.createElement("div");
-            title.classList.add("record-title");
-            title.textContent = row.Title;
+    ${item.commentary_content ? `
+      <section class="commentary">
+        <h3>${item.commentary_title}</h3>
+        <p class="author">by ${item.commentary_author}</p>
+        <p>${item.commentary_content}</p>
+      </section>
+    ` : ''}
 
-            const content = document.createElement("div");
-            content.classList.add("record-content");
-            content.textContent = row.Content;
+    ${item.reflection_content ? `
+      <section class="reflection">
+        <h3>${item.reflection_title}</h3>
+        <p class="author">by ${item.reflection_author}</p>
+        <p>${item.reflection_content}</p>
+      </section>
+    ` : ''}
+  `;
+}
 
-            record.appendChild(title);
-            record.appendChild(content);
-            recordsContainer.appendChild(record);
-          });
-        }
+// ----------  BREADCRUMBS ----------
+function updateBreadcrumbs(record) {
+  const breadcrumb = document.querySelector('#breadcrumbs');
+  breadcrumb.innerHTML = `
+    <a href="#" onclick="filterBy('year','${record.year}')">${record.year}</a> ›
+    <a href="#" onclick="filterBy('season','${record.season}')">${record.season}</a> ›
+    <a href="#" onclick="filterBy('week','${record.week}')">Week ${record.week}</a>
+  `;
+}
 
-        function updateBreadcrumbs(filteredData) {
-          const crumbs = [];
-          crumbs.push(`<span data-type="home">Home</span>`);
-          filterColumns.forEach(col => {
-            const val = filters[col].value;
-            if (val) crumbs.push(`<span data-type="filter" data-col="${col}">${col}: ${val}</span>`);
-          });
-          if (keywordInput.value.trim()) {
-            crumbs.push(`<span data-type="keyword">Search: "${keywordInput.value.trim()}"</span>`);
-          }
-          document.getElementById("breadcrumbs").innerHTML = crumbs.join(" › ");
-        }
+function filterBy(field, value) {
+  const matched = records.find(r => r[field] === value);
+  if (matched) updateFiltersFromRecord(matched);
+}
 
-        function applyFilters() {
-          let filtered = [...data];
-
-          // Apply dropdown filters first
-          filterColumns.forEach(col => {
-            const val = filters[col].value;
-            if (val) filtered = filtered.filter(r => r[col] === val);
-          });
-
-          // Then keyword search
-          const keyword = keywordInput.value.trim().toLowerCase();
-          if (keyword) {
-            filtered = filtered.filter(r =>
-              r.Title.toLowerCase().includes(keyword) ||
-              r.Content.toLowerCase().includes(keyword)
-            );
-          }
-
-          renderRecords(filtered);
-          updateBreadcrumbs(filtered);
-        }
-
-        // Event listeners
-        Object.values(filters).forEach(select => select.addEventListener("change", applyFilters));
-        keywordInput.addEventListener("input", applyFilters);
-
-        document.getElementById("breadcrumbs").addEventListener("click", e => {
-          const type = e.target.dataset.type;
-          if (!type) return;
-
-          if (type === "home") {
-            Object.values(filters).forEach(s => (s.value = ""));
-            keywordInput.value = "";
-          } else if (type === "filter") {
-            const col = e.target.dataset.col;
-            filters[col].value = "";
-          } else if (type === "keyword") {
-            keywordInput.value = "";
-          }
-          applyFilters();
-        });
-
-        // Initial render
-        renderRecords(data);
-        updateBreadcrumbs(data);
-      }
-    });
-  </script>
 </body>
 </html>
