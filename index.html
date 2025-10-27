@@ -37,7 +37,7 @@
       font-weight: bold;
     }
 
-    #sidebar select, #sidebar input {
+    #sidebar select {
       width: 100%;
       padding: 0.4rem;
       margin-top: 0.3rem;
@@ -64,7 +64,7 @@
     }
 
     #breadcrumbs a:hover {
-ar      text-decoration: underline;
+      text-decoration: underline;
     }
 
     h2 {
@@ -101,9 +101,6 @@ ar      text-decoration: underline;
   <div id="sidebar">
     <h2>Filter Readings</h2>
 
-    <label for="dateFilter">Select Date</label>
-    <input type="date" id="dateFilter" />
-
     <label for="yearFilter">Lectionary Year</label>
     <select id="yearFilter"></select>
 
@@ -113,20 +110,20 @@ ar      text-decoration: underline;
     <label for="weekFilter">Lectionary Week</label>
     <select id="weekFilter"></select>
 
-    <label for="weekFilter">Sunday Date</label>
-    <select id="weekFilter"></select>
+    <label for="sundayDateFilter">Sunday Date</label>
+    <select id="sundayDateFilter"></select>
 
-    <label for="weekFilter">Lectionary Sunday</label>
-    <select id="weekFilter"></select>
+    <label for="lectionarySundayFilter">Lectionary Sunday</label>
+    <select id="lectionarySundayFilter"></select>
 
-    <label for="weekFilter">Content Type</label>
-    <select id="weekFilter"></select>
+    <label for="contentTypeFilter">Content Type</label>
+    <select id="contentTypeFilter"></select>
 
-   <label for="weekFilter">Author</label>
-    <select id="weekFilter"></select>
+    <label for="authorFilter">Author</label>
+    <select id="authorFilter"></select>
 
-    <label for="weekFilter">Content</label>
-    <select id="weekFilter"></select>
+    <label for="contentFilter">Content</label>
+    <select id="contentFilter"></select>
   </div>
 
   <!-- Main Content -->
@@ -140,133 +137,81 @@ ar      text-decoration: underline;
   <!-- JavaScript -->
   <script>
     let records = [];
-    let currentFilters = { year: null, season: null, week: null, date: null };
 
-    Papa.parse("paul-stein-content1.csv", {
+    // Load CSV file (ensure it exists at data/paul-stein-content1.csv)
+    Papa.parse("data/paul-stein-content1.csv", {
       download: true,
       header: true,
       complete: function (results) {
-        records = results.data.filter(r => r.date); // ensure valid rows
+        records = results.data.filter(r => r.year); // ensure valid rows
         populateFilters(records);
-        showDefaultWeek();
+        showFirstRecord();
       },
     });
 
     function populateFilters(data) {
-      const years = [...new Set(data.map((d) => d.year))];
-      const seasons = [...new Set(data.map((d) => d.season))];
-      const weeks = [...new Set(data.map((d) => d.week))];
-      fillSelect("#yearFilter", years);
-      fillSelect("#seasonFilter", seasons);
-      fillSelect("#weekFilter", weeks);
+      fillSelect("#yearFilter", [...new Set(data.map(d => d.year))]);
+      fillSelect("#seasonFilter", [...new Set(data.map(d => d.season))]);
+      fillSelect("#weekFilter", [...new Set(data.map(d => d.week))]);
+      fillSelect("#sundayDateFilter", [...new Set(data.map(d => d.sunday_date))]);
+      fillSelect("#lectionarySundayFilter", [...new Set(data.map(d => d.lectionary_sunday))]);
+      fillSelect("#contentTypeFilter", [...new Set(data.map(d => d.content_type))]);
+      fillSelect("#authorFilter", [...new Set(data.map(d => d.author))]);
+      fillSelect("#contentFilter", [...new Set(data.map(d => d.content))]);
     }
 
     function fillSelect(selector, values) {
       const select = document.querySelector(selector);
       select.innerHTML =
         '<option value="">All</option>' +
-        values.map((v) => `<option value="${v}">${v}</option>`).join("");
+        values.map(v => `<option value="${v}">${v}</option>`).join("");
     }
 
-    // ---------- DATE SELECTION ----------
-    document
-      .querySelector("#dateFilter")
-      .addEventListener("change", function () {
-        const selectedDate = this.value;
-        const matched = records.find((r) => r.date === selectedDate);
-        if (matched) updateFiltersFromRecord(matched);
-      });
-
-    function updateFiltersFromRecord(record) {
-      currentFilters = {
-        year: record.year,
-        season: record.season,
-        week: record.week,
-        date: record.date,
-      };
-      document.querySelector("#yearFilter").value = record.year;
-      document.querySelector("#seasonFilter").value = record.season;
-      document.querySelector("#weekFilter").value = record.week;
-      document.querySelector("#dateFilter").value = record.date;
-      renderContent(record);
-      updateBreadcrumbs(record);
-    }
-
-    // ---------- OTHER FILTERS ----------
-    ["#yearFilter", "#seasonFilter", "#weekFilter"].forEach((sel) => {
-      document.querySelector(sel).addEventListener("change", function () {
+    // ---------- FILTER EVENT LISTENERS ----------
+    ["#yearFilter", "#seasonFilter", "#weekFilter"].forEach(sel => {
+      document.querySelector(sel).addEventListener("change", function() {
         const year = document.querySelector("#yearFilter").value;
         const season = document.querySelector("#seasonFilter").value;
         const week = document.querySelector("#weekFilter").value;
-        const matched = records.find(
-          (r) =>
-            r.year === year && r.season === season && r.week === week
-        );
-        if (matched) updateFiltersFromRecord(matched);
+        const matched = records.find(r => r.year === year && r.season === season && r.week === week);
+        if (matched) renderRecord(matched);
       });
     });
 
-    // ---------- DEFAULT WEEK ----------
-    function showDefaultWeek() {
-      const today = new Date();
-      const nextSunday = new Date(today);
-      nextSunday.setDate(today.getDate() + ((7 - today.getDay()) % 7 || 7));
-      const nextSundayISO = nextSunday.toISOString().split("T")[0];
-
-      const matched = records.find((r) => r.date === nextSundayISO);
-
-      if (matched) {
-        updateFiltersFromRecord(matched);
-      } else {
-        // fallback: closest earlier record
-        const fallback = records.find((r) => r.date <= nextSundayISO) || records[0];
-        updateFiltersFromRecord(fallback);
-      }
+    // ---------- INITIAL DISPLAY ----------
+    function showFirstRecord() {
+      if (records.length > 0) renderRecord(records[0]);
     }
 
     // ---------- RENDER CONTENT ----------
-    function renderContent(item) {
+    function renderRecord(item) {
       const main = document.querySelector("#main-content");
       main.innerHTML = `
         <h2>${item.gospel_title || ""}</h2>
         <p><em>${item.date} • ${item.season} Week ${item.week}, Year ${item.year}</em></p>
 
-        ${
-          item.gospel_content
-            ? `
+        ${item.gospel_content ? `
           <section class="gospel">
             <h3>${item.gospel_title}</h3>
             <p class="author">by ${item.gospel_author}</p>
             <p>${item.gospel_content}</p>
-          </section>
-        `
-            : ""
-        }
+          </section>` : ""}
 
-        ${
-          item.commentary_content
-            ? `
+        ${item.commentary_content ? `
           <section class="commentary">
             <h3>${item.commentary_title}</h3>
             <p class="author">by ${item.commentary_author}</p>
             <p>${item.commentary_content}</p>
-          </section>
-        `
-            : ""
-        }
+          </section>` : ""}
 
-        ${
-          item.reflection_content
-            ? `
+        ${item.reflection_content ? `
           <section class="reflection">
             <h3>${item.reflection_title}</h3>
             <p class="author">by ${item.reflection_author}</p>
             <p>${item.reflection_content}</p>
-          </section>
-        `
-            : ""
-        }
+          </section>` : ""}
       `;
+      updateBreadcrumbs(item);
     }
 
     // ---------- BREADCRUMBS ----------
@@ -280,8 +225,8 @@ ar      text-decoration: underline;
     }
 
     function filterBy(field, value) {
-      const matched = records.find((r) => r[field] === value);
-      if (matched) updateFiltersFromRecord(matched);
+      const matched = records.find(r => r[field] === value);
+      if (matched) renderRecord(matched);
     }
   </script>
 </body>
